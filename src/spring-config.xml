@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/aop
+            http://www.springframework.org/schema/aop/spring-aop.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <bean id="personService" class="services.impl.PersonServiceImpl">
+        <property name="dao" ref="personDao"/>
+    </bean>
+
+    <!--<bean id="personDao" class="dao.impl.PersonDaoImpl"/>-->
+    <bean id="personAdvice" class="advice.PersonAdvice"/>
+    <bean id="logAdvice" class="advice.LogAdvice"/>
+
+    <aop:config>
+        <aop:pointcut id="pcFindPerson" expression="execution(* services.PersonService.findPerson(..))"/>
+        <aop:advisor advice-ref="personAdvice" pointcut-ref="pcFindPerson"/>
+    </aop:config>
+
+    <aop:config>
+        <aop:pointcut id="pcPerson" expression="execution(* services.PersonService.*Person(..))"/>
+        <aop:advisor advice-ref="logAdvice" pointcut-ref="pcPerson"/>
+        <aop:advisor advice-ref="transactionInterceptor" pointcut-ref="pcPerson"/>
+    </aop:config>
+
+    <!-- - - MyBatis - - -->
+
+    <!-- 配置数据源 -->
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:MySQL://localhost:3306/telbook?useUnicode=true&amp;characterEncoding=utf8"/>
+        <property name="username" value="me"/>
+        <property name="password" value="123123"/>
+        <property name="initialSize" value="1"/>
+        <property name="maxTotal" value="10"/>
+        <property name="maxWaitMillis" value="2000"/>
+    </bean>
+
+    <!-- 配置 sqlSessionFactory -->
+    <bean id="sqlSessionFactoryBean" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- 配置数据源 -->
+        <property name="dataSource" ref="dataSource"/>
+        <!-- 配置 mapper 文件位置 -->
+        <property name="mapperLocations" value="classpath:dao/impl/*Mapper.xml"/>
+
+        <property name="typeAliasesPackage" value="entity"/>
+    </bean>
+
+    <!-- 配置 dao    sqlSession.getMapper(xxxDao.class) -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!-- 定义创建对象的包 -->
+        <property name="basePackage" value="dao"/>
+        <!-- 通过 sqlSessionFactory 创建 dao 对象，命名为xxxDao -->
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactoryBean"/>
+    </bean>
+
+    <!-- 配置事务 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!-- 数据源 -->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!-- 事务通知类通过环绕通知实现 -->
+    <tx:advice id="transactionInterceptor" transaction-manager="transactionManager">
+        <!-- 业务详细配置 -->
+        <tx:attributes>
+            <!-- 查询方法设置事务属性及只读属性 -->
+            <tx:method name="find*" propagation="SUPPORTS" read-only="true"/>
+            <!-- 通配默认 -->
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+
+
+</beans>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="dao.PersonDao">
+    <resultMap id="personRM" type="Person" autoMapping="true">
+        <id property="id" column="id"/>
+    </resultMap>
+
+    <sql id="select">
+        SELECT
+            id,
+            name,
+            email,
+            mobile,
+            telphone telPhone,
+            city
+        FROM telbook.person
+    </sql>
+
+    <select id="selectPerson" resultMap="personRM">
+        <include refid="select"/>
+        <where>
+            <if test="id!=null">id=#{id}</if>
+            <if test="name!=null">and name like '%'||${name}||'%'</if>
+            <if test="city!=null">and city like '%'||${city}||'%'</if>
+        </where>
+    </select>
+
+    <delete id="deletePerson">
+        DELETE FROM telbook.person
+        <where>
+            <if test="id!=null">id=#{id}</if>
+        </where>
+    </delete>
+
+    <insert id="insertPerson">
+        INSERT INTO telbook.person (name, mobile, telphone, email, city)
+        VALUES (#{name}, #{mobile}, #{telPhone}, #{email}, #{city})
+    </insert>
+
+    <update id="updatePerson">
+        UPDATE telbook.person
+        <set>
+            <if test="name!=null">name=#{name},</if>
+            <if test="mobile!=null">mobile=#{mobile},</if>
+            <if test="telPhone!=null">telphone=#{telPhone},</if>
+            <if test="email!=null">email=#{email},</if>
+            <if test="city!=null">city=#{city}</if>
+        </set>
+        <where>
+            <if test="id!=null">id=#{id}</if>
+        </where>
+    </update>
+</mapper>
